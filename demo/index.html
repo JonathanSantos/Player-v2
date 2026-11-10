@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Player: demonstração</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { padding: 16px; font: 15px/1.5 system-ui, sans-serif; background: #f2f2f2; color: #222; }
+    p { margin-bottom: 16px; max-width: 60ch; }
+    #player2, #player3, #player4 { margin-top: 10px; }
+    #player2 { width: 80%; }
+    #player3 { width: 60%; }
+    #player4 { width: 40%; }
+  </style>
+</head>
+<body>
+  <p>A página de demonstração de 2016, com os mesmos quatro players nas mesmas larguras. Clique no botão para tocar e pausar, dê um duplo clique para parar, clique na faixa para ir a um ponto da música.</p>
+
+  <div id="player1"></div>
+  <div id="player2"></div>
+  <div id="player3"></div>
+  <div id="player4"></div>
+
+  <script type="module">
+    import { Player } from '../index.js';
+    import { createTuneUrl } from './tune.js';
+
+    // Em 2016 a música vinha de html5.justhearit.com, que não responde mais.
+    // Aqui ela é sintetizada na hora, em demo/tune.js.
+    const music = createTuneUrl();
+
+    const player1 = new Player(document.querySelector('#player1'), music, { title: 'Melodia de demonstração' });
+    const player2 = new Player(document.querySelector('#player2'), music, { title: 'Melodia de demonstração' });
+    const player3 = new Player(document.querySelector('#player3'), music, { title: 'Melodia de demonstração' });
+    const player4 = new Player(document.querySelector('#player4'), music, { title: 'Melodia de demonstração' });
+
+    Object.assign(window, { player1, player2, player3, player4 });
+  </script>
+</body>
+</html>

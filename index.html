@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player, dez anos depois</title>
+<meta name="description" content="Uma releitura do Player: o que o código de 2016 conta sobre a época, o que ele já fazia bem e como foi refeito em 2026.">
+<style>
+  :root {
+    --bg: #f3f3f3;
+    --surface: #ffffff;
+    --ink: #1c1c1e;
+    --text: #333336;
+    --muted: #646464;
+    --line: #d6d6d6;
+    --marker: #682268;
+    --marker-soft: #6822681f;
+    --bad: #b3261e;
+    --good: #1b6e3c;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+    --text-col: 43rem;
+    --wide-col: 68rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151515;
+      --surface: #1e1e1e;
+      --ink: #f2f2f2;
+      --text: #cfcfcf;
+      --muted: #9b9b9b;
+      --line: #343434;
+      --marker: #c58bc5;
+      --marker-soft: #c58bc52e;
+      --bad: #ff8a80;
+      --good: #7fd49b;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 17px/1.65 var(--sans);
+  }
+  main, header.top, footer { padding: 0 1.25rem; max-width: calc(var(--wide-col) + 2.5rem); margin: 0 auto; }
+  .col { max-width: var(--text-col); }
+
+  h1, h2, h3 { font-family: var(--mono); color: var(--ink); line-height: 1.2; margin: 0; }
+  h1 { font-size: clamp(2rem, 6vw, 3.4rem); font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: 1.45rem; font-weight: 700; margin-top: 5rem; }
+  h3 { font-size: 1rem; font-weight: 700; margin-top: 2.6rem; }
+  p { margin: 1rem 0 0; }
+  a { color: inherit; text-decoration-color: var(--marker); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  a:hover { background: var(--marker-soft); }
+  code, kbd { font-family: var(--mono); font-size: 0.86em; }
+  :not(pre) > code { background: var(--marker-soft); padding: 0.08em 0.3em; border-radius: 3px; color: var(--ink); }
+  
+  strong { color: var(--ink); }
+
+  header.top { padding-top: 4.5rem; padding-bottom: 1rem; }
+  header.top .lede { font-size: 1.2rem; max-width: 40rem; margin-top: 1.4rem; }
+  .tick { color: var(--muted); }
+
+  dl.facts { display: flex; flex-wrap: wrap; gap: 0.6rem 2.4rem; margin: 2.2rem 0 0; padding: 1.1rem 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
+  dl.facts div { min-width: 7rem; }
+  dl.facts dt { font-size: 0.8rem; color: var(--muted); }
+  dl.facts dd { margin: 0; font-family: var(--mono); font-weight: 700; color: var(--ink); font-size: 1.05rem; }
+
+  nav.toc { margin-top: 1.4rem; font-family: var(--mono); font-size: 0.82rem; display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; }
+  nav.toc a { text-decoration: none; color: var(--muted); }
+  nav.toc a:hover { color: var(--ink); }
+
+  /* Blocos de código (Jonacode) */
+  .code { margin-top: 1.2rem; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+  .code > .label { display: flex; justify-content: space-between; gap: 1rem; font: 0.74rem/1 var(--mono); color: var(--muted); padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--line); }
+  .code pre { margin: 0; padding: 0.8rem; overflow: auto; font: 13px/1.6 var(--mono); }
+  .jc-line-deco.mark { background: var(--marker-soft); box-shadow: inset 3px 0 0 var(--marker); }
+
+  /* Linha do tempo */
+  ol.timeline { list-style: none; margin: 1.6rem 0 0; padding: 0; font-family: var(--mono); font-size: 0.84rem; }
+  ol.timeline li { display: grid; grid-template-columns: 5.2rem 4.6rem 1fr; gap: 0.8rem; padding: 0.38rem 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+  ol.timeline .t { color: var(--muted); }
+  ol.timeline .h { color: var(--muted); }
+  ol.timeline .m { color: var(--ink); font-family: var(--sans); font-size: 0.95rem; }
+  ol.timeline li.gap { display: block; border-bottom: 1px solid var(--line); color: var(--muted); padding: 0.9rem 0 0.9rem 5.2rem; font-family: var(--sans); font-size: 0.9rem; }
+  ol.timeline li.now .m { font-weight: 700; }
+  @media (max-width: 34rem) { ol.timeline li { grid-template-columns: 4.6rem 1fr; } ol.timeline .h { display: none; } ol.timeline li.gap { padding-left: 0; } }
+
+  /* Tabelas */
+  .table-scroll { overflow-x: auto; margin-top: 1.4rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.9rem 0.6rem 0; border-bottom: 1px solid var(--line); }
+  th { font: 700 0.76rem var(--mono); color: var(--muted); border-bottom: 2px solid var(--ink); white-space: nowrap; }
+  td code { white-space: pre-wrap; word-break: break-word; }
+  td.was { color: var(--bad); }
+  td.now { color: var(--good); }
+  td.num { font-family: var(--mono); white-space: nowrap; }
+
+  /* Lado a lado */
+  .lab { margin-top: 1.6rem; }
+  .presets { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .presets button, .tabs button {
+    font: 0.8rem var(--mono); color: var(--text); background: transparent; border: 1px solid var(--line);
+    padding: 0.42rem 0.7rem; border-radius: 4px; cursor: pointer;
+  }
+  .presets button:hover, .tabs button:hover { border-color: var(--ink); }
+  .presets button[aria-pressed="true"], .tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .presets button:focus-visible, .tabs button:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+  .hint { min-height: 3.2em; margin-top: 0.9rem; font-size: 0.95rem; }
+  .tokens { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.9rem; font: 0.76rem var(--mono); }
+  .tokens span { border: 1px solid var(--line); background: var(--surface); padding: 0.2rem 0.45rem; border-radius: 3px; white-space: pre-wrap; word-break: break-all; }
+  .tokens .caption { border: 0; background: none; color: var(--muted); padding-left: 0; }
+  .versus { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.4rem; }
+  .versus .code { margin-top: 0.8rem; }
+  @media (max-width: 52rem) { .versus { grid-template-columns: 1fr; } }
+  .year { font-family: var(--mono); font-weight: 800; color: var(--ink); }
+
+  /* Fluxo */
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0.4rem; margin-top: 1.6rem; font: 0.78rem var(--mono); }
+  .flow .group { border: 1px dashed var(--line); border-radius: 6px; padding: 0.5rem 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .flow .group > b { font-weight: 400; color: var(--muted); font-size: 0.7rem; }
+  .flow .steps { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
+  .flow .step { background: var(--surface); border: 1px solid var(--line); border-radius: 3px; padding: 0.3rem 0.5rem; color: var(--ink); }
+  .flow .arrow { color: var(--muted); }
+
+  .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.4rem; }
+
+  ul.plain { padding-left: 1.1rem; margin: 1rem 0 0; }
+  ul.plain li { margin-top: 0.45rem; }
+
+  footer { margin-top: 6rem; padding-top: 2rem; padding-bottom: 4rem; border-top: 1px solid var(--line); font-size: 0.9rem; color: var(--muted); }
+
+  /* Palco dos dois players */
+  .stage-label { margin: 0; font-size: 0.82rem; color: var(--muted); }
+  .stage { margin-top: 0.6rem; min-height: 80px; }
+  ul.log { list-style: none; margin: 0; padding: 0.7rem 0.8rem; min-height: 9.5rem; font: 0.76rem/1.5 var(--mono); color: var(--text); }
+  ul.log li { padding: 0.15rem 0; overflow-wrap: anywhere; }
+  ul.log li.bad { color: var(--bad); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wide">
+    <h1>new Player<span class="tick">(…)</span><br>dez anos depois</h1>
+    <p class="lede">Em 14 de setembro de 2016, Jonathan publicou o <a href="https://github.com/JonathanSantos-zz/Player">Player</a>: um componente de música escrito em JavaScript puro, dentro de um único <code>index.html</code>. O README terminava com uma tarefa: <em>“Converter o código para EcmaScript6”</em>. Este relatório relê aquele código, mede o que ele faz hoje e apresenta a versão em que a tarefa foi cumprida.</p>
+
+    <dl class="facts">
+      <div><dt>Idade em 10 nov 2026</dt><dd>10 anos, 1 mês, 27 dias</dd></div>
+      <div><dt>Commits</dt><dd>5, quatro pelo site</dd></div>
+      <div><dt>Do primeiro ao último</dt><dd>11 min 58 s</dd></div>
+      <div><dt>Código</dt><dd>152 linhas de JS</dd></div>
+      <div><dt>Dependências</dt><dd>nenhuma</dd></div>
+    </dl>
+
+    <nav class="toc" aria-label="Seções">
+      <a href="#ideia">a ideia</a>
+      <a href="#tempo">linha do tempo</a>
+      <a href="#epoca">a época</a>
+      <a href="#admiro">o que admiro</a>
+      <a href="#revelou">o que o tempo revelou</a>
+      <a href="#lado-a-lado">2016 × 2026 ao vivo</a>
+      <a href="#refeito">o que foi refeito</a>
+      <a href="#padroes">padrões</a>
+      <a href="#essencia">o que ficou igual</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section id="ideia">
+  <div class="col">
+    <h2>A ideia</h2>
+    <p>Um player de música que você coloca na página com uma linha. Você entrega um elemento e o endereço de um arquivo; o componente cria os próprios elementos, aplica o próprio estilo e cuida do áudio. A página de exemplo monta quatro deles, em larguras diferentes, para mostrar que cada instância é independente e que o desenho acompanha o espaço que recebe:</p>
+  </div>
+  <div class="wide">
+    <div class="code" data-file="original/index.html" data-lines="174-177" data-wrap></div>
+  </div>
+  <div class="col">
+    <p>O uso é só isso. Não há HTML para copiar, folha de estilo para incluir nem biblioteca para carregar. Em 2016, a resposta habitual para “preciso de um player” era um plugin de jQuery com meia dúzia de arquivos. Este cabe em 152 linhas e não depende de nada.</p>
+  </div>
+</section>
+
+<section id="tempo">
+  <div class="col">
+    <h2>Linha do tempo</h2>
+    <p>Cinco commits numa quarta-feira, perto das seis da tarde. O primeiro vem da criação do repositório, com a licença MIT escolhida na hora. Os outros quatro têm o GitHub como autor da gravação: foram feitos pelo site, enviando e editando o arquivo no navegador.</p>
+    <ol class="timeline">
+      <li><span class="t">14 set 2016</span><span class="h">17:58:35</span><span class="m">Initial commit: o repositório nasce só com a licença MIT</span></li>
+      <li><span class="t">+1 min</span><span class="h">17:59:25</span><span class="m">“Pagina index”: o <code>index.html</code> inteiro, de uma vez</span></li>
+      <li><span class="t">+3 min</span><span class="h">18:01:34</span><span class="m">Create README.md, com o <em>To Do: Converter o código para EcmaScript6</em></span></li>
+      <li><span class="t">+8 min</span><span class="h">18:06:07</span><span class="m">Update index.html: quatro <code>var player</code> com o mesmo nome viram <code>player1</code> a <code>player4</code></span></li>
+      <li><span class="t">+12 min</span><span class="h">18:10:33</span><span class="m">Update index.html: <code>var self = this</code> vira <code>var me = this</code></span></li>
+      <li class="gap">3.709 dias sem commits. O “To Do” ficou esperando.</li>
+      <li class="now"><span class="t">10 nov 2026</span><span class="h"></span><span class="m">Releitura, medição e a versão 2.0.0, em ES2022</span></li>
+    </ol>
+    <p>Os dois últimos commits são de alguém relendo o próprio código logo depois de publicar. O primeiro corrige quatro variáveis que se sobrescreviam. O segundo troca <code>self</code> por <code>me</code>, um cuidado de quem sabia que <code>self</code> já é um nome global do navegador.</p>
+  </div>
+</section>
+
+<section id="epoca">
+  <div class="col">
+    <h2>O que o código conta sobre setembro de 2016</h2>
+  </div>
+  <div class="wide">
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Vestígio</th><th>O que ele registra</th></tr></thead>
+        <tbody>
+          <tr><td><em>To Do: Converter o código para EcmaScript6</em></td><td>O ES2015 tinha pouco mais de um ano. Os navegadores novos já entendiam <code>class</code>, mas quem precisava do Internet Explorer 11 ainda escrevia ES5 ou montava um Babel. “Converter para ES6” era o item que estava na lista de todo projeto.</td></tr>
+          <tr><td><code>Player.fn = Player.prototype = {</code></td><td>A assinatura do jQuery, que faz <code>jQuery.fn = jQuery.prototype</code>. Quem aprendeu JavaScript lendo plugins de jQuery escrevia “classes” assim.</td></tr>
+          <tr><td><code>var me = this</code></td><td>Antes das <em>arrow functions</em>, cada função de evento tinha o próprio <code>this</code>, e a saída era guardar o de fora numa variável. <code>me</code> era o nome preferido de quem vinha do ExtJS.</td></tr>
+          <tr><td><code>type="text/javascript"</code> e <code>type="text/css"</code></td><td>Atributos que o HTML5 já tinha tornado opcionais, mantidos pelo hábito do HTML4.</td></tr>
+          <tr><td><code>new Audio(…)</code> e <code>html5.justhearit.com</code></td><td>Tocar música no navegador sem Flash ainda era novidade suficiente para um site colocar “html5” no endereço. O ano de 2016 foi aquele em que o Chrome passou a preferir HTML5 ao Flash.</td></tr>
+          <tr><td><code>Fetty_Wap_-_My_Way.mp3</code></td><td>A trilha sonora: um sucesso de 2015. O endereço não responde mais; em 10 de novembro de 2026, a conexão expira sem resposta.</td></tr>
+          <tr><td><code>document.body.scrollLeft</code></td><td>No Chrome daquela época, a rolagem da página era lida em <code>body</code>. Em 2017 ela passou para <code>documentElement</code>, como manda o padrão, e hoje essa expressão vale sempre zero.</td></tr>
+          <tr><td>Tabulações e quebras de linha <code>CRLF</code></td><td>O arquivo foi escrito no Windows.</td></tr>
+          <tr><td><code>nomeMusica</code>, <code>porcentagem</code>, <code>rolamentoX</code></td><td>Português e inglês no mesmo arquivo, lado a lado com <code>progressBar</code> e <code>currentTime</code>. O código de quem pensa o problema na própria língua e conversa com a API na dela.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="admiro">
+  <div class="col">
+    <h2>O que admiro neste código</h2>
+
+    <h3>1. O componente descrito como dado</h3>
+    <p>O construtor não cria elementos e sai aplicando estilo linha a linha. Ele declara uma lista: cada item tem um elemento e um objeto com o estilo dele.</p>
+  </div>
+  <div class="wide"><div class="code" data-file="original/index.html" data-lines="26-45" data-mark="28-35"></div></div>
+  <div class="col">
+    <p>Depois, um laço só aplica tudo:</p>
+  </div>
+  <div class="wide"><div class="code" data-file="original/index.html" data-lines="99-108"></div></div>
+  <div class="col">
+    <p>Separar a descrição (o que existe e como se parece) do mecanismo (como isso vira DOM) é a ideia central de toda biblioteca de interface que veio depois. E o estilo mora dentro do JavaScript, junto do componente, no mesmo ano em que a comunidade começava a discutir CSS-in-JS.</p>
+
+    <h3>2. Um detalhe de layout que só funciona porque o DOM é criado por código</h3>
+    <p>O botão ocupa 20% e a faixa 80%, os dois como <code>inline-block</code>. Em HTML escrito à mão, o espaço em branco entre as duas tags ocuparia alguns pixels e empurraria a faixa para a linha de baixo. Como os elementos nascem de <code>createElement</code>, não existe espaço entre eles, e os 100% fecham exatos.</p>
+
+    <h3>3. O áudio criado sob demanda</h3>
+  </div>
+  <div class="wide"><div class="code" data-file="original/index.html" data-lines="132-138"></div></div>
+  <div class="col">
+    <p>É o padrão <em>lazy initialization</em>: um único ponto de acesso que cria o recurso na primeira vez e o reaproveita depois. Todo o resto do código pede o áudio por ali, sem se preocupar se ele já existe.</p>
+
+    <h3>4. Dois gestos no mesmo botão</h3>
+  </div>
+  <div class="wide"><div class="code" data-file="original/index.html" data-lines="110-130"></div></div>
+  <div class="col">
+    <p>Um clique toca ou pausa; dois cliques param e voltam ao início. Não há botão de “stop” ocupando espaço. E a combinação funciona por causa da ordem em que o navegador entrega os eventos: clique, clique, duplo clique. A música toca, pausa e só então é rebobinada.</p>
+
+    <h3>5. A conta de ida e a conta de volta</h3>
+  </div>
+  <div class="wide"><div class="code" data-file="original/index.html" data-lines="154-170" data-mark="166-170"></div></div>
+  <div class="col">
+    <p>O tempo da música vira largura da barra com uma regra de três; o clique na faixa vira tempo com a regra inversa. A segunda conta ganhou um método próprio, <code>_changeAudioByPercent</code>, separado do evento de clique. É a semente de uma API pública: na versão nova ele se chama <code>seek(percent)</code>.</p>
+
+    <h3>6. A intenção guardada nos nomes</h3>
+    <p>A área à direita do botão se chama <code>nomeMusica</code>, embora nunca mostre nome nenhum. E o construtor tem uma linha solta, <code>this.audio;</code>, que não faz nada: é a declaração de um campo, escrita por alguém que pensava em classes numa linguagem que ainda não as tinha no dia a dia. As duas intenções estão cumpridas na versão nova. O nome da música aparece, e <code>#audio = null</code> é um campo de classe de verdade.</p>
+  </div>
+</section>
+
+<section id="revelou">
+  <div class="col">
+    <h2>O que o tempo revelou</h2>
+    <p>Abri o <code>index.html</code> original, sem alterações, num Chrome de 2026 e exercitei o componente por script. Para os casos que precisam de som, usei a melodia sintetizada deste repositório no lugar do MP3 que saiu do ar. Estes são os resultados observados:</p>
+  </div>
+  <div class="wide">
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Situação</th><th>Em 2016 (medido hoje)</th><th>Causa</th><th>Em 2026</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>A música do exemplo</td>
+            <td class="was">Nada acontece na tela. No console, mais tarde: <code>NotSupportedError: Failed to load because no supported source was found</code></td>
+            <td>O endereço morreu, e o componente não tem estado de erro para mostrar.</td>
+            <td class="now">O player mostra a falha e desabilita o botão</td>
+          </tr>
+          <tr>
+            <td>Clicar na faixa antes de o áudio carregar</td>
+            <td class="was"><code>TypeError: Failed to set the 'currentTime' property on 'HTMLMediaElement': The provided double value is non-finite.</code></td>
+            <td>Sem a duração, a regra de três resulta em <code>NaN</code>.</td>
+            <td class="now">O pedido fica guardado e é atendido quando a duração chega</td>
+          </tr>
+          <tr>
+            <td>Tocar e pausar em seguida</td>
+            <td class="was"><code>Uncaught (in promise) AbortError: The play() request was interrupted by a call to pause()</code></td>
+            <td><code>play()</code> devolve uma promessa desde o Chrome 50, de abril de 2016. O código não espera por ela.</td>
+            <td class="now">A interrupção é reconhecida e ignorada</td>
+          </tr>
+          <tr>
+            <td>Depois de criar um Player</td>
+            <td class="was"><code>window.x === "background-color"</code></td>
+            <td><code>for (x in options)</code> sem <code>var</code>: a variável do laço vira global.</td>
+            <td class="now">Nenhuma variável global</td>
+          </tr>
+          <tr>
+            <td>O mesmo código em modo estrito ou num módulo</td>
+            <td class="was"><code>ReferenceError: x is not defined</code></td>
+            <td>A mesma linha. Módulos ES são sempre estritos, então a conversão para ES6 quebraria exatamente aqui.</td>
+            <td class="now">É um módulo ES</td>
+          </tr>
+          <tr>
+            <td>Usar pelo teclado ou com leitor de tela</td>
+            <td class="was">0 elementos focáveis, nenhum papel ou rótulo, nenhum texto</td>
+            <td>O componente é feito só de <code>div</code>.</td>
+            <td class="now">Um <code>button</code> e um <code>slider</code> com rótulos, setas, Home e End</td>
+          </tr>
+          <tr>
+            <td><code>player1.constructor</code></td>
+            <td class="was"><code>Object</code></td>
+            <td>Trocar o <code>prototype</code> inteiro por um objeto literal apaga a referência ao construtor.</td>
+            <td class="now"><code>Player</code>, por ser uma <code>class</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col">
+    <p>Com um arquivo de áudio válido, o original continua fazendo tudo o que promete: toca, pausa, para no duplo clique e leva a música ao ponto clicado (um clique no meio de uma faixa de 24 s levou a 11,97 s). Dez anos de navegadores não quebraram o caminho principal. A tabela mostra as bordas: o que acontece quando a rede falha, quando o usuário é mais rápido que o download e quando ele não usa mouse.</p>
+  </div>
+</section>
+
+<section id="lado-a-lado">
+  <div class="col">
+    <h2>2016 × 2026, ao vivo</h2>
+    <p>Os dois players abaixo estão rodando de verdade. O da esquerda é o código de 2016, lido do <code>index.html</code> original e executado sem alterações. O da direita é a versão nova. Os dois tocam a mesma melodia, sintetizada nesta página.</p>
+  </div>
+  <div class="wide lab">
+    <div class="presets" id="presets" role="group" aria-label="Cenários"></div>
+    <p class="hint col" id="hint"></p>
+    <div class="versus">
+      <div>
+        <p class="stage-label"><span class="year">2016</span> · <code>new Player(elemento, musica)</code></p>
+        <div class="stage" id="stage-old"></div>
+        <div class="code"><div class="label"><span>o que escapa do componente</span></div><ul class="log" id="log-old" aria-live="polite"></ul></div>
+      </div>
+      <div>
+        <p class="stage-label"><span class="year">2026</span> · <code>new Player(elemento, musica)</code></p>
+        <div class="stage" id="stage-new"></div>
+        <div class="code"><div class="label"><span>player.state, a cada statechange</span></div><div id="state-new"></div></div>
+      </div>
+    </div>
+    <p class="col">Experimente o teclado: a tecla Tab chega ao player de 2026 e passa direto pelo de 2016. Com o foco na faixa, as setas andam cinco segundos.</p>
+  </div>
+</section>
+
+<section id="refeito">
+  <div class="col">
+    <h2>O que foi refeito</h2>
+    <p>O “To Do” do README está cumprido, e de um jeito que 2016 não permitia: ES2022, com módulos, <code>class</code>, campos privados de verdade e nenhuma etapa de build. Por dentro, o componente passou a ter um caminho único entre o que acontece e o que aparece:</p>
+  </div>
+  <div class="wide">
+    <div class="flow" role="img" aria-label="Fluxo: os eventos do elemento de áudio passam por uma função redutora que calcula o novo estado; o estado é traduzido numa descrição da tela; a descrição é aplicada ao DOM. Os gestos do usuário chamam métodos do Player, que comandam o áudio.">
+      <div class="group"><b>casca: quem fala com o navegador</b>
+        <div class="steps">
+          <span class="step">clique, duplo clique, teclado</span><span class="arrow">→</span>
+          <span class="step">toggle · stop · seek</span><span class="arrow">→</span>
+          <span class="step">&lt;audio&gt;</span>
+        </div>
+      </div>
+      <div class="group"><b>núcleo puro: dados entram, dados saem</b>
+        <div class="steps">
+          <span class="step">evento do áudio</span><span class="arrow">→</span>
+          <span class="step">reduce(estado, evento)</span><span class="arrow">→</span>
+          <span class="step">describe(estado)</span>
+        </div>
+      </div>
+      <div class="group"><b>casca</b>
+        <div class="steps">
+          <span class="step">render(elementos, descrição)</span>
+        </div>
+      </div>
+    </div>
+    <div class="tabs" id="tabs" role="tablist" aria-label="Arquivos da versão nova"></div>
+    <div class="code"><div id="new-code"></div></div>
+  </div>
+
+  <div class="col">
+    <h3>As mudanças, uma por uma</h3>
+    <ul class="plain">
+      <li><strong>O nome da música aparece.</strong> A área <code>nomeMusica</code> finalmente mostra um nome. Sem a opção <code>title</code>, ele sai do endereço: <code>Fetty_Wap_-_My_Way.mp3</code> vira “Fetty Wap - My Way”. Ao lado, o tempo decorrido e a duração.</li>
+      <li><strong>Teclado e leitor de tela.</strong> O botão é um <code>button</code>; a faixa é um <code>slider</code> com rótulo, valor e texto de valor. Setas, Home e End movem a música.</li>
+      <li><strong>Falhas visíveis.</strong> Música que não carrega vira uma mensagem no próprio player. Clicar na faixa cedo demais guarda o pedido em vez de lançar erro.</li>
+      <li><strong>Uma folha de estilo para todos.</strong> Em 2016, cada player aplicava estilo em quatro elementos via <code>element.style</code>. Agora uma única folha é inserida na página, com as cores em variáveis CSS que você pode trocar por instância.</li>
+      <li><strong>Privado de verdade.</strong> O sublinhado de <code>_init</code> e <code>_component</code> era um pedido de educação. <code>#audio</code> e <code>#render</code> são inacessíveis de fora.</li>
+      <li><strong>Uma API para quem usa.</strong> <code>play()</code>, <code>pause()</code>, <code>toggle()</code>, <code>stop()</code>, <code>seek(percent)</code>, <code>destroy()</code>, a propriedade <code>state</code> e o evento <code>statechange</code>.</li>
+      <li><strong>Testes.</strong> 29 testes com <code>node:test</code>: as contas, a máquina de estados e o fluxo principal num DOM simulado, com um áudio de mentira.</li>
+      <li><strong>Uma música que não some.</strong> A demonstração toca uma melodia de 24 segundos sintetizada em JavaScript, em <code>demo/tune.js</code>. Nenhum arquivo de áudio hospedado em outro lugar.</li>
+    </ul>
+  </div>
+
+  <div class="wide">
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th></th><th>2016</th><th>2026</th></tr></thead>
+        <tbody>
+          <tr><td>Linguagem</td><td class="num">ES5, script solto na página</td><td class="num">ES2022, módulos, sem build</td></tr>
+          <tr><td>Código</td><td class="num">152 linhas em 1 arquivo</td><td class="num">552 linhas em 6 arquivos, com JSDoc</td></tr>
+          <tr><td>Testes</td><td class="num">nenhum</td><td class="num">29</td></tr>
+          <tr><td>Dependências</td><td class="num">0</td><td class="num">0 (happy-dom só nos testes)</td></tr>
+          <tr><td>Variáveis globais</td><td class="num">Player, player1…4 e x</td><td class="num">nenhuma</td></tr>
+          <tr><td>Elementos focáveis</td><td class="num">0</td><td class="num">2 por player</td></tr>
+          <tr><td>Estilo</td><td class="num">inline, em 4 elementos por player</td><td class="num">1 folha por página, variáveis CSS</td></tr>
+          <tr><td>Estados</td><td class="num">tocando ou não</td><td class="num">idle, loading, playing, paused, error</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="padroes">
+  <div class="col">
+    <h2>Padrões aplicados</h2>
+    <p>Vários deles já estavam no original em forma de semente. A reescrita deu nome e espaço a cada um.</p>
+  </div>
+  <div class="wide">
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Padrão</th><th>Onde</th><th>O que resolve</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Functional core, imperative shell</strong></td><td><code>core.js</code>, <code>state.js</code> e <code>describe</code> são puros; <code>player.js</code> e <code>render</code> tocam o navegador</td><td>As regras de três de 2016 viraram funções testáveis sem DOM. Os casos de <code>NaN</code> são tratados uma vez, no lugar certo.</td></tr>
+          <tr><td><strong>Reducer com tabela de transições</strong> (State)</td><td><code>TRANSITIONS</code> em <code>state.js</code></td><td>Cada evento do áudio tem uma linha dizendo o que muda. O estado de erro, que não existia, é uma transição a mais.</td></tr>
+          <tr><td><strong>Fluxo unidirecional</strong></td><td>evento → <code>reduce</code> → <code>describe</code> → <code>render</code></td><td>A tela é sempre função do estado. Em 2016 cada ouvinte escrevia direto no DOM.</td></tr>
+          <tr><td><strong>Template declarativo</strong></td><td><code>TEMPLATE</code> em <code>view.js</code></td><td>É o <code>this.components</code> de 2016 com nomes: <code>refs.bar</code> em vez de <code>components[3]</code>.</td></tr>
+          <tr><td><strong>Lazy initialization</strong></td><td><code>get audio()</code></td><td>O <code>_getInstanceAudio</code> original, agora preguiçoso de fato: com <code>preload: 'none'</code> nada é baixado antes do primeiro toque.</td></tr>
+          <tr><td><strong>Observer</strong></td><td><code>Player extends EventTarget</code>, evento <code>statechange</code></td><td>A página reage ao player sem mexer no áudio por dentro.</td></tr>
+          <tr><td><strong>Facade</strong></td><td>Os métodos públicos do <code>Player</code></td><td>Seis verbos escondem o <code>HTMLAudioElement</code>, suas promessas e seus eventos.</td></tr>
+          <tr><td><strong>Injeção de dependência</strong></td><td>Opção <code>createAudio</code></td><td>Os testes entregam um áudio de mentira; você pode entregar um já configurado.</td></tr>
+          <tr><td><strong>Encapsulamento</strong></td><td>Campos e métodos <code>#privados</code></td><td>A convenção do sublinhado virou garantia da linguagem.</td></tr>
+          <tr><td><strong>Descarte com AbortController</strong></td><td><code>destroy()</code></td><td>Um <code>abort()</code> remove todos os ouvintes de uma vez. Em 2016 não havia como desmontar o player.</td></tr>
+          <tr><td><strong>Guard clauses</strong></td><td>Em todo o código novo</td><td>O <code>if (this.father instanceof Element)</code> silencioso virou um erro que diz o que faltou.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="essencia">
+  <div class="col">
+    <h2>O que ficou igual, de propósito</h2>
+    <ul class="plain">
+      <li>A assinatura: <code>new Player(elementoPai, enderecoDaMusica)</code>. As opções são um terceiro argumento que ninguém é obrigado a usar.</li>
+      <li>O componente se monta sozinho. Nenhum HTML para copiar, nenhum CSS para incluir, nenhuma dependência.</li>
+      <li>O desenho: 80 pixels de altura, 20% para o botão, a barra de 20 pixels com metade da opacidade, o cinza <code>#646464</code> e o roxo <code>#682268</code>.</li>
+      <li>Os gestos: um clique toca e pausa, dois cliques param, clicar na faixa leva a música até ali. Ao terminar, ela volta ao início.</li>
+      <li>As propriedades <code>father</code>, <code>music</code> e <code>audio</code>.</li>
+      <li>A página de exemplo com quatro players em 100%, 80%, 60% e 40%, agora em <a href="demo/index.html"><code>demo/index.html</code></a>.</li>
+      <li>O código de 2016, intacto, em <a href="original/index.html"><code>original/index.html</code></a>, com os cinco commits no histórico.</li>
+    </ul>
+
+    <h3>O que ainda não faz</h3>
+    <p>Não há controle de volume, lista de músicas nem arrastar na faixa: é clique e teclado. A conferência no navegador foi feita no Chrome; Firefox, Safari e leitores de tela reais não foram testados. A música original não acompanha o projeto, porque o arquivo saiu do ar e não é meu para distribuir.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="col">
+    <p>Original: <a href="https://github.com/JonathanSantos-zz/Player">JonathanSantos-zz/Player</a> (2016). Versão nova: <a href="https://github.com/JonathanSantos/Player-v2">JonathanSantos/Player-v2</a> (2026).</p>
+    <p>Todo código nesta página é exibido com o <a href="https://github.com/JonathanSantos/jonacode">Jonacode</a>, o editor que o mesmo autor escreveu dez anos depois. Os trechos são lidos dos arquivos reais do repositório na hora de gerar o relatório (<code>npm run report</code>).</p>
+  </div>
+</footer>
+
+<script type="application/json" id="sources">{"original/index.html":"\u003c!DOCTYPE html>\r\n\u003chtml>\r\n\u003chead>\r\n\t\u003ctitle>\u003c/title>\r\n\t\u003cstyle type=\"text/css\">\r\n\t\t* {\r\n\t\t\tbox-sizing: border-box;\r\n\t\t\tmargin: 0;\r\n\t\t\tpadding: 0;\r\n\t\t}\r\n\t\u003c/style>\r\n\u003c/head>\r\n\u003cbody>\r\n\t\u003cdiv id=\"player1\">\u003c/div>\r\n\t\u003cdiv id=\"player2\" style=\"width: 80%;margin-top: 10px;\">\u003c/div>\r\n\t\u003cdiv id=\"player3\" style=\"width: 60%;margin-top: 10px;\">\u003c/div>\r\n\t\u003cdiv id=\"player4\" style=\"width: 40%;margin-top: 10px;\">\u003c/div>\r\n\r\n\t\u003cscript type=\"text/javascript\">\r\n\t\t\t\r\n\t\tvar Player = function (father, music) {\r\n\t\t\tthis.father = father;\r\n\t\t\tthis.music = music;\r\n\t\t\tthis.audio;\r\n\r\n\t\t\tthis.components = [\r\n\r\n\t\t\t\t{\r\n\t\t\t\t\telement : document.createElement('div'),\r\n\t\t\t\t\tstyle : {\r\n\t\t\t\t\t\twidth : '100%',\r\n\t\t\t\t\t\theight : '80px',\r\n\t\t\t\t\t\t'background-color' : '#646464'\r\n\t\t\t\t\t}\r\n\t\t\t\t},\r\n\r\n\t\t\t\t{\r\n\t\t\t\t\telement : document.createElement('div'),\r\n\t\t\t\t\tstyle : {\r\n\t\t\t\t\t\twidth : '20%',\r\n\t\t\t\t\t\theight : '80px',\r\n\t\t\t\t\t\tdisplay : 'inline-block',\r\n\t\t\t\t\t\t'background-color' : '#682268'\r\n\t\t\t\t\t}\r\n\t\t\t\t},\r\n\r\n\t\t\t\t{\r\n\t\t\t\t\telement : document.createElement('div'),\r\n\t\t\t\t\tstyle : {\r\n\t\t\t\t\t\twidth : '80%',\r\n\t\t\t\t\t\theight : '80px',\r\n\t\t\t\t\t\tdisplay : 'inline-block'\r\n\t\t\t\t\t}\r\n\t\t\t\t},\r\n\r\n\t\t\t\t{\r\n\t\t\t\t\telement : document.createElement('div'),\r\n\t\t\t\t\tstyle : {\r\n\t\t\t\t\t\twidth : '0%',\r\n\t\t\t\t\t\theight : '20px',\r\n\t\t\t\t\t\topacity : '0.5',\r\n\t\t\t\t\t\t'background-color' : '#682268'\r\n\t\t\t\t\t}\r\n\t\t\t\t}\r\n\t\t\t];\r\n\r\n\t\t\tthis._init();\r\n\t\t};\r\n\r\n\t\tPlayer.fn = Player.prototype = {\r\n\r\n\t\t\t_init : function () {\r\n\t\t\t\tif (this.father instanceof Element) {\r\n\t\t\t\t\tthis.father.appendChild(this._component());\r\n\t\t\t\t}\r\n\t\t\t},\r\n\r\n\t\t\t_component : function () {\r\n\t\t\t\tfor (var i = 0; i \u003c this.components.length; i++) {\r\n\t\t\t\t\tthis._applyStyle(this.components[i]);\r\n\t\t\t\t}\r\n\r\n\t\t\t\tvar box = this.components[0].element;\r\n\t\t\t\tvar playPause = this.components[1].element;\r\n\t\t\t\tvar nomeMusica = this.components[2].element;\r\n\t\t\t\tvar progressBar = this.components[3].element;\r\n\r\n\t\t\t\tbox.appendChild(playPause);\r\n\t\t\t\tbox.appendChild(nomeMusica);\r\n\t\t\t\tnomeMusica.appendChild(progressBar);\r\n\r\n\t\t\t\tthis._applyActionMusic(playPause);\r\n\t\t\t\tthis._applyActionAudio(this._getInstanceAudio(), progressBar);\r\n\t\t\t\tthis._applyProgressBarAction(nomeMusica);\r\n\r\n\t\t\t\treturn box;\r\n\t\t\t},\r\n\r\n\t\t\t_applyStyle : function (obj) {\r\n\t\t\t\tvar element = obj.element;\r\n\t\t\t\tvar options = obj.style;\r\n\r\n\t\t\t\tif (options) {\r\n\t\t\t\t\tfor (x in options) {\r\n\t\t\t\t\t\telement.style[x] = options[x];\r\n\t\t\t\t\t}\r\n\t\t\t\t}\r\n\t\t\t},\r\n\r\n\t\t\t_applyActionMusic : function (component) {\r\n\t\t\t\tvar me = this;\r\n\r\n\t\t\t\tcomponent.addEventListener('click', function(){\r\n\t\t\t\t\tvar audio = me._getInstanceAudio();\r\n\r\n\t\t\t\t\tif (audio.paused) {\r\n\t\t\t\t\t\taudio.play();\r\n\t\t\t\t\t}else{\r\n\t\t\t\t\t\taudio.pause();\r\n\t\t\t\t\t}\r\n\r\n\t\t\t\t});\r\n\r\n\t\t\t\tcomponent.addEventListener('dblclick', function(){\r\n\t\t\t\t\tvar audio = me._getInstanceAudio();\r\n\t\t\t\t\taudio.pause();\r\n\t\t\t\t\taudio.currentTime = 0;\r\n\t\t\t\t});\r\n\r\n\t\t\t},\r\n\r\n\t\t\t_getInstanceAudio : function () {\r\n\t\t\t\tif (!this.audio) {\r\n\t\t\t\t\tthis.audio = new Audio(this.music);\r\n\t\t\t\t}\r\n\r\n\t\t\t\treturn this.audio;\r\n\t\t\t},\r\n\r\n\t\t\t_applyActionAudio : function (audio, div) {\r\n\t\t\t\taudio.addEventListener('timeupdate', function(){\r\n\t\t\t\t\tvar currentTime = audio.currentTime;\r\n\t\t\t\t\tvar duration = audio.duration;\r\n\t\t\t\t\tvar porcentagem = (currentTime * 100) / duration;\r\n\t\t\t\t\tdiv.style.width = porcentagem + '%';\r\n\t\t\t\t});\r\n\r\n\t\t\t\taudio.addEventListener('ended', function(){\r\n\t\t\t\t\taudio.currentTime = 0;\r\n\t\t\t\t});\r\n\r\n\t\t\t},\r\n\r\n\t\t\t_applyProgressBarAction : function (div) {\r\n\t\t\t\tvar me = this;\r\n\t\t\t\tdiv.addEventListener('click', function (e) {\r\n\t\t\t\t\tvar rolamentoX = document.body.scrollLeft;\r\n\t\t\t\t\tvar boxElemento = this.getBoundingClientRect();\r\n\t\t\t\t\tvar posX = e.clientX - boxElemento.left + rolamentoX;\r\n\t\t\t\t\tvar width = this.clientWidth;\r\n\t\t\t\t\tvar porcentagem = (posX * 100) / width;\r\n\t\t\t\t\tme._changeAudioByPercent(porcentagem);\r\n\t\t\t\t});\r\n\t\t\t},\r\n\r\n\t\t\t_changeAudioByPercent : function (percent) {\r\n\t\t\t\tvar audio = this._getInstanceAudio();\r\n\t\t\t\tvar duration = audio.duration;\r\n\t\t\t\taudio.currentTime = (duration * percent) / 100;\r\n\t\t\t}\r\n\r\n\t\t};\r\n\r\n\t\tvar player1 = new Player(document.querySelector('#player1'), 'http://html5.justhearit.com/songs/fe/263796/Fetty_Wap_-_My_Way.mp3');\r\n\t\tvar player2 = new Player(document.querySelector('#player2'), 'http://html5.justhearit.com/songs/fe/263796/Fetty_Wap_-_My_Way.mp3');\r\n\t\tvar player3 = new Player(document.querySelector('#player3'), 'http://html5.justhearit.com/songs/fe/263796/Fetty_Wap_-_My_Way.mp3');\r\n\t\tvar player4 = new Player(document.querySelector('#player4'), 'http://html5.justhearit.com/songs/fe/263796/Fetty_Wap_-_My_Way.mp3');\r\n\r\n\t\u003c/script>\r\n\u003c/body>\r\n\u003c/html>\r\n\r\n\r\n","original/README.md":"# Player\nPlayer de música em javascript\n\nComponente Player de Música desenvolvido em Javascript.\n\nTo Do:\n\nConverter o código para EcmaScript6\n","index.js":"export { Player } from './src/player.js';\nexport { INITIAL_STATE, reduce } from './src/state.js';\nexport { clamp, formatTime, percentForKey, percentFromPointer, progressPercent, timeFromPercent, titleFromUrl } from './src/core.js';\n","src/core.js":"// As contas do Player. Funções puras: recebem números e textos, devolvem\n// números e textos. Nada aqui conhece o DOM ou o elemento de áudio.\n\nconst SEEK_STEP_SECONDS = 5;\n\nexport const clamp = (value, min, max) => Math.min(max, Math.max(min, value));\n\nconst isKnown = (duration) => Number.isFinite(duration) && duration > 0;\n\n/** Quanto da música já tocou, de 0 a 100. Antes de a duração ser conhecida, 0. */\nexport const progressPercent = (currentTime, duration) => {\n  if (!isKnown(duration)) return 0;\n  return clamp((currentTime * 100) / duration, 0, 100);\n};\n\n/**\n * Em que ponto da faixa o clique caiu, de 0 a 100.\n * `clientX` e `rect` estão no mesmo referencial (a janela), então basta subtrair.\n * @param {number} clientX\n * @param {{ left: number, width: number }} rect\n */\nexport const percentFromPointer = (clientX, rect) => {\n  if (!(rect.width > 0)) return 0;\n  return clamp(((clientX - rect.left) * 100) / rect.width, 0, 100);\n};\n\n/** O instante da música que corresponde a um percentual, ou `null` se a duração ainda é desconhecida. */\nexport const timeFromPercent = (percent, duration) => {\n  if (!isKnown(duration)) return null;\n  return (duration * clamp(percent, 0, 100)) / 100;\n};\n\nconst KEY_TARGETS = {\n  ArrowRight: (currentTime) => currentTime + SEEK_STEP_SECONDS,\n  ArrowUp: (currentTime) => currentTime + SEEK_STEP_SECONDS,\n  ArrowLeft: (currentTime) => currentTime - SEEK_STEP_SECONDS,\n  ArrowDown: (currentTime) => currentTime - SEEK_STEP_SECONDS,\n  Home: () => 0,\n  End: (currentTime, duration) => duration,\n};\n\n/** Para onde uma tecla leva a música, em percentual. `null` quando a tecla não é de navegação. */\nexport const percentForKey = (key, currentTime, duration) => {\n  const target = KEY_TARGETS[key];\n  if (!target || !isKnown(duration)) return null;\n  return progressPercent(clamp(target(currentTime, duration), 0, duration), duration);\n};\n\n/** `75` vira `1:15`. Enquanto o tempo não é conhecido, `--:--`. */\nexport const formatTime = (seconds) => {\n  if (!Number.isFinite(seconds) || seconds \u003c 0) return '--:--';\n\n  const whole = Math.floor(seconds);\n  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;\n};\n\nconst safeDecode = (text) => {\n  try {\n    return decodeURIComponent(text);\n  } catch {\n    return text;\n  }\n};\n\n/**\n * O nome da música tirado do endereço do arquivo:\n * `.../Fetty_Wap_-_My_Way.mp3` vira `Fetty Wap - My Way`.\n */\nexport const titleFromUrl = (url) => {\n  if (/^(blob|data):/i.test(url)) return '';\n\n  const path = url.split(/[?#]/)[0];\n  const fileName = safeDecode(path.slice(path.lastIndexOf('/') + 1));\n  return fileName.replace(/\\.[a-z0-9]{2,5}$/i, '').replace(/[_+]+/g, ' ').replace(/\\s+/g, ' ').trim();\n};\n","src/player.js":"import { percentForKey, percentFromPointer, timeFromPercent, titleFromUrl } from './core.js';\nimport { AUDIO_EVENTS, INITIAL_STATE, reduce } from './state.js';\nimport { ensureStyles } from './styles.js';\nimport { DEFAULT_LABELS, createView, describe, render } from './view.js';\n\n/**\n * @typedef {object} PlayerOptions\n * @property {string} [title]      Nome exibido. Sem ele, o nome sai do endereço do arquivo.\n * @property {'none' | 'metadata' | 'auto'} [preload]  Padrão `metadata`. Com `none`, nada é baixado até o primeiro toque.\n * @property {{ background?: string, accent?: string, text?: string }} [colors]\n * @property {Partial\u003cimport('./view.js').Labels>} [labels]  Textos lidos por leitores de tela e mostrados em erros.\n * @property {(music: string) => HTMLAudioElement} [createAudio]  Troca a fábrica do áudio (testes, Web Audio...).\n */\n\nconst isElement = (value) => value?.nodeType === 1;\n\n/**\n * Player de música. A assinatura é a de 2016: o elemento pai e o endereço da música.\n *\n * ```js\n * const player = new Player(document.querySelector('#player1'), 'musicas/My_Way.mp3');\n * ```\n *\n * Clique no botão toca e pausa, duplo clique para e volta ao início, clique na\n * faixa leva a música até aquele ponto. Emite `statechange` a cada mudança.\n */\nexport class Player extends EventTarget {\n  #father;\n  #music;\n  #title;\n  #labels;\n  #preload;\n  #createAudio;\n  #audio = null;\n  #view;\n  #state = INITIAL_STATE;\n  #pendingPercent = null;\n  #listeners = new AbortController();\n\n  /**\n   * @param {Element} father\n   * @param {string} music\n   * @param {PlayerOptions} [options]\n   */\n  constructor(father, music, options = {}) {\n    super();\n\n    if (!isElement(father)) throw new TypeError('Player: o primeiro argumento precisa ser um elemento da página.');\n    if (typeof music !== 'string' || music === '') throw new TypeError('Player: o segundo argumento precisa ser o endereço da música.');\n\n    const document = father.ownerDocument;\n\n    this.#father = father;\n    this.#music = music;\n    this.#title = options.title ?? titleFromUrl(music);\n    this.#labels = { ...DEFAULT_LABELS, ...options.labels };\n    this.#preload = options.preload ?? 'metadata';\n    this.#createAudio = options.createAudio ?? ((source) => new document.defaultView.Audio(source));\n\n    ensureStyles(document);\n    this.#view = createView(document);\n    this.#applyColors(options.colors);\n    this.#listenToView();\n    this.#render();\n    father.append(this.#view.root);\n\n    if (this.#preload !== 'none') this.audio;\n  }\n\n  get father() {\n    return this.#father;\n  }\n\n  get music() {\n    return this.#music;\n  }\n\n  get title() {\n    return this.#title;\n  }\n\n  /** @returns {import('./state.js').PlayerState} */\n  get state() {\n    return this.#state;\n  }\n\n  /** O elemento raiz do componente. */\n  get element() {\n    return this.#view.root;\n  }\n\n  /**\n   * O elemento de áudio, criado na primeira vez que alguém precisa dele\n   * (o `_getInstanceAudio` de 2016).\n   * @returns {HTMLAudioElement}\n   */\n  get audio() {\n    if (this.#audio) return this.#audio;\n\n    const audio = this.#createAudio(this.#music);\n    audio.preload = this.#preload;\n    this.#audio = audio;\n    this.#listenToAudio(audio);\n    return audio;\n  }\n\n  async play() {\n    try {\n      await this.audio.play();\n    } catch (error) {\n      // Pausar antes de o áudio começar interrompe o play(): isso não é um erro da música.\n      if (error?.name !== 'AbortError') this.#dispatch({ type: 'error' });\n    }\n  }\n\n  pause() {\n    this.audio.pause();\n  }\n\n  toggle() {\n    return this.audio.paused ? this.play() : this.pause();\n  }\n\n  /** Para e volta ao início. */\n  stop() {\n    this.audio.pause();\n    this.audio.currentTime = 0;\n    this.#pendingPercent = null;\n    this.#dispatch({ type: 'timeupdate', currentTime: 0 });\n  }\n\n  /**\n   * Leva a música a um ponto, de 0 a 100. Se a duração ainda não é conhecida,\n   * o pedido fica guardado e é atendido quando o arquivo carregar.\n   * @param {number} percent\n   */\n  seek(percent) {\n    const time = timeFromPercent(percent, this.audio.duration);\n\n    if (time === null) {\n      this.#pendingPercent = percent;\n      return;\n    }\n\n    this.audio.currentTime = time;\n    this.#dispatch({ type: 'timeupdate', currentTime: time });\n  }\n\n  /** Remove o componente da página, solta o áudio e desliga todos os ouvintes. */\n  destroy() {\n    this.#listeners.abort();\n    this.#view.root.remove();\n\n    if (!this.#audio) return;\n    this.#audio.pause();\n    this.#audio.removeAttribute('src');\n    this.#audio.load();\n    this.#audio = null;\n  }\n\n  #applyColors(colors = {}) {\n    for (const [name, value] of Object.entries(colors)) {\n      this.#view.root.style.setProperty(`--player-${name}`, value);\n    }\n  }\n\n  #listenToView() {\n    const { button, track } = this.#view;\n    const { signal } = this.#listeners;\n\n    button.addEventListener('click', () => this.toggle(), { signal });\n    button.addEventListener('dblclick', () => this.stop(), { signal });\n\n    track.addEventListener('click', (event) => {\n      this.seek(percentFromPointer(event.clientX, track.getBoundingClientRect()));\n    }, { signal });\n\n    track.addEventListener('keydown', (event) => {\n      const percent = percentForKey(event.key, this.audio.currentTime, this.audio.duration);\n      if (percent === null) return;\n\n      event.preventDefault();\n      this.seek(percent);\n    }, { signal });\n  }\n\n  #listenToAudio(audio) {\n    const { signal } = this.#listeners;\n\n    for (const type of AUDIO_EVENTS) {\n      audio.addEventListener(type, () => {\n        this.#dispatch({ type, currentTime: audio.currentTime, duration: audio.duration });\n      }, { signal });\n    }\n\n    audio.addEventListener('loadedmetadata', () => this.#applyPendingSeek(), { signal });\n    audio.addEventListener('ended', () => { audio.currentTime = 0; }, { signal });\n  }\n\n  #applyPendingSeek() {\n    if (this.#pendingPercent === null) return;\n\n    const percent = this.#pendingPercent;\n    this.#pendingPercent = null;\n    this.seek(percent);\n  }\n\n  #dispatch(event) {\n    const next = reduce(this.#state, event);\n    if (next === this.#state) return;\n\n    this.#state = next;\n    this.#render();\n    this.dispatchEvent(new CustomEvent('statechange', { detail: next }));\n  }\n\n  #render() {\n    render(this.#view, describe(this.#state, this.#title, this.#labels));\n  }\n}\n","src/state.js":"/**\n * O que o Player sabe sobre a música em um dado instante.\n *\n * @typedef {object} PlayerState\n * @property {'idle' | 'loading' | 'playing' | 'paused' | 'error'} status\n * @property {number} currentTime  Em segundos.\n * @property {number} duration     Em segundos; `NaN` até o navegador ler o arquivo.\n */\n\n/** @type {PlayerState} */\nexport const INITIAL_STATE = Object.freeze({ status: 'idle', currentTime: 0, duration: NaN });\n\n// Um erro encerra a conversa: nenhum evento atrasado do áudio tira o Player desse estado.\nconst unlessFailed = (transition) => (state, event) => (state.status === 'error' ? state : transition(state, event));\n\n/** Cada evento do elemento de áudio e o que ele muda no estado. */\nconst TRANSITIONS = {\n  loadedmetadata: (state, { duration }) => ({ ...state, duration }),\n  durationchange: (state, { duration }) => ({ ...state, duration }),\n  timeupdate: (state, { currentTime }) => ({ ...state, currentTime }),\n  waiting: unlessFailed((state) => ({ ...state, status: 'loading' })),\n  playing: unlessFailed((state) => ({ ...state, status: 'playing' })),\n  pause: unlessFailed((state) => ({ ...state, status: 'paused' })),\n  ended: unlessFailed((state) => ({ ...state, status: 'paused', currentTime: 0 })),\n  error: (state) => ({ ...state, status: 'error' }),\n};\n\nexport const AUDIO_EVENTS = Object.keys(TRANSITIONS);\n\n/**\n * O próximo estado depois de um evento. Nunca altera o estado recebido.\n * @param {PlayerState} state\n * @param {{ type: string, currentTime?: number, duration?: number }} event\n * @returns {PlayerState}\n */\nexport const reduce = (state, event) => {\n  const transition = TRANSITIONS[event.type];\n  return transition ? Object.freeze(transition(state, event)) : state;\n};\n","src/styles.js":"// As medidas e as cores são as do Player de 2016: 80px de altura, 20% para o\n// botão, uma barra de 20px com metade da opacidade, cinza #646464 e roxo #682268.\n// Em 2016 elas eram aplicadas elemento por elemento, via `element.style`.\nexport const STYLE_ID = 'player-styles';\n\nexport const PLAYER_CSS = `\n.player {\n  --player-background: #646464;\n  --player-accent: #682268;\n  --player-text: #ffffff;\n  display: flex;\n  box-sizing: border-box;\n  width: 100%;\n  height: 80px;\n  background-color: var(--player-background);\n  color: var(--player-text);\n  font: 14px/1.3 system-ui, sans-serif;\n}\n.player *, .player *::before { box-sizing: border-box; }\n.player__button {\n  flex: 0 0 20%;\n  min-width: 48px;\n  height: 100%;\n  margin: 0;\n  padding: 0;\n  border: 0;\n  background-color: var(--player-accent);\n  color: inherit;\n  cursor: pointer;\n  display: grid;\n  place-items: center;\n}\n.player__button::before {\n  content: '';\n  width: 22px;\n  height: 24px;\n  background-color: currentColor;\n  clip-path: polygon(0 0, 100% 50%, 0 100%);\n}\n.player[data-status='playing'] .player__button::before,\n.player[data-status='loading'] .player__button::before {\n  width: 20px;\n  background-color: transparent;\n  clip-path: none;\n  border-inline: 7px solid currentColor;\n}\n.player__track {\n  position: relative;\n  flex: 1 1 0;\n  min-width: 0;\n  height: 100%;\n  cursor: pointer;\n  touch-action: manipulation;\n}\n.player__bar {\n  width: 0%;\n  height: 20px;\n  opacity: 0.5;\n  background-color: var(--player-accent);\n}\n.player__info {\n  display: flex;\n  justify-content: space-between;\n  align-items: baseline;\n  gap: 12px;\n  padding: 12px 14px 0;\n  pointer-events: none;\n}\n.player__title {\n  min-width: 0;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  font-weight: 600;\n}\n.player__time {\n  flex: none;\n  font-variant-numeric: tabular-nums;\n  opacity: 0.85;\n}\n.player__button:focus-visible,\n.player__track:focus-visible {\n  outline: 2px solid var(--player-text);\n  outline-offset: -4px;\n}\n.player[data-status='loading'] { cursor: progress; }\n.player[data-status='error'] .player__button { cursor: not-allowed; opacity: 0.6; }\n@media (prefers-reduced-motion: no-preference) {\n  .player__bar { transition: width 0.2s linear; }\n}\n`;\n\n/** Coloca a folha de estilo no documento, uma única vez, não importa quantos Players existam. */\nexport const ensureStyles = (document) => {\n  if (document.getElementById(STYLE_ID)) return;\n\n  const style = document.createElement('style');\n  style.id = STYLE_ID;\n  style.textContent = PLAYER_CSS;\n  document.head.append(style);\n};\n","src/view.js":"import { formatTime, progressPercent } from './core.js';\n\n/**\n * @typedef {object} Labels\n * @property {string} play\n * @property {string} pause\n * @property {string} position\n * @property {string} untitled\n * @property {string} error\n */\n\n/** @type {Labels} */\nexport const DEFAULT_LABELS = Object.freeze({\n  play: 'Tocar',\n  pause: 'Pausar',\n  position: 'Posição da música',\n  untitled: 'Música sem nome',\n  error: 'Não foi possível tocar esta música',\n});\n\n/**\n * O componente descrito como dado, a mesma ideia do `this.components` de 2016.\n * A diferença: cada peça tem um nome (`ref`) em vez de uma posição no array.\n */\nconst TEMPLATE = {\n  ref: 'root',\n  tag: 'div',\n  className: 'player',\n  children: [\n    { ref: 'button', tag: 'button', className: 'player__button', attributes: { type: 'button' } },\n    {\n      ref: 'track',\n      tag: 'div',\n      className: 'player__track',\n      attributes: { role: 'slider', tabindex: '0', 'aria-valuemin': '0', 'aria-valuemax': '100' },\n      children: [\n        { ref: 'bar', tag: 'div', className: 'player__bar' },\n        {\n          tag: 'div',\n          className: 'player__info',\n          children: [\n            { ref: 'title', tag: 'span', className: 'player__title' },\n            { ref: 'time', tag: 'span', className: 'player__time' },\n          ],\n        },\n      ],\n    },\n  ],\n};\n\nconst build = (document, spec, refs) => {\n  const element = document.createElement(spec.tag);\n  element.className = spec.className;\n\n  for (const [name, value] of Object.entries(spec.attributes ?? {})) element.setAttribute(name, value);\n  for (const child of spec.children ?? []) element.append(build(document, child, refs));\n  if (spec.ref) refs[spec.ref] = element;\n\n  return element;\n};\n\n/**\n * Cria os elementos do Player e devolve cada um pelo nome.\n * @returns {{ root: HTMLElement, button: HTMLButtonElement, track: HTMLElement, bar: HTMLElement, title: HTMLElement, time: HTMLElement }}\n */\nexport const createView = (document) => {\n  const refs = {};\n  build(document, TEMPLATE, refs);\n  return refs;\n};\n\n/**\n * Traduz o estado no que a tela deve mostrar. Função pura: o mesmo estado dá\n * sempre a mesma descrição.\n *\n * @param {import('./state.js').PlayerState} state\n * @param {string} title\n * @param {Labels} labels\n */\nexport const describe = (state, title, labels) => {\n  const failed = state.status === 'error';\n  const sounding = state.status === 'playing' || state.status === 'loading';\n  const time = `${formatTime(state.currentTime)} / ${formatTime(state.duration)}`;\n  const name = title || labels.untitled;\n\n  return {\n    status: state.status,\n    percent: progressPercent(state.currentTime, state.duration),\n    buttonLabel: `${sounding ? labels.pause : labels.play}: ${name}`,\n    buttonDisabled: failed,\n    title: failed ? labels.error : name,\n    time: failed ? '' : time,\n    sliderLabel: `${labels.position}: ${name}`,\n    sliderText: time,\n    busy: state.status === 'loading',\n  };\n};\n\n/** Aplica uma descrição aos elementos. É o único lugar que escreve no DOM depois da criação. */\nexport const render = (view, description) => {\n  view.root.dataset.status = description.status;\n  view.root.setAttribute('aria-busy', String(description.busy));\n\n  view.button.setAttribute('aria-label', description.buttonLabel);\n  view.button.disabled = description.buttonDisabled;\n\n  view.bar.style.width = `${description.percent}%`;\n  view.title.textContent = description.title;\n  view.time.textContent = description.time;\n\n  view.track.setAttribute('aria-label', description.sliderLabel);\n  view.track.setAttribute('aria-valuenow', String(Math.round(description.percent)));\n  view.track.setAttribute('aria-valuetext', description.sliderText);\n};\n","demo/tune.js":"// Uma melodia curta sintetizada em JavaScript, para o Player ter o que tocar\n// sem depender de um arquivo de áudio hospedado em outro lugar.\n\nconst SAMPLE_RATE = 22050;\nconst NOTE_SECONDS = 0.25;\n\n// Semitons em relação ao Lá 440. `null` é pausa.\nconst A = 0, C = 3, D = 5, E = 7, G = 10;\nconst PHRASES = [\n  [A, C, E, A + 12, E, C, A, null],\n  [G - 12, A, D, G, D, A, G - 12, null],\n  [C, E, G, C + 12, G, E, C, null],\n  [D, E, G, E, D, C, A, null],\n];\nconst MELODY = [...PHRASES, ...PHRASES, ...PHRASES].flat();\n\nconst frequencyOf = (semitones) => 220 * 2 ** (semitones / 12);\n\n/** Amostra de uma nota: senoide com um harmônico e um decaimento, para soar como tecla. */\nconst sampleNote = (frequency, time) => {\n  const envelope = Math.min(1, time / 0.01) * Math.exp(-5 * time);\n  const wave = Math.sin(2 * Math.PI * frequency * time) + 0.3 * Math.sin(4 * Math.PI * frequency * time);\n  return wave * envelope * 0.5;\n};\n\nconst writeText = (view, offset, text) => {\n  for (let index = 0; index \u003c text.length; index++) view.setUint8(offset + index, text.charCodeAt(index));\n};\n\n/**\n * Sintetiza a melodia e devolve os bytes de um arquivo WAV (PCM 16 bits, mono).\n * @returns {Uint8Array}\n */\nexport const renderTune = () => {\n  const samplesPerNote = Math.round(SAMPLE_RATE * NOTE_SECONDS);\n  const sampleCount = MELODY.length * samplesPerNote;\n  const view = new DataView(new ArrayBuffer(44 + sampleCount * 2));\n\n  writeText(view, 0, 'RIFF');\n  view.setUint32(4, 36 + sampleCount * 2, true);\n  writeText(view, 8, 'WAVEfmt ');\n  view.setUint32(16, 16, true);\n  view.setUint16(20, 1, true);\n  view.setUint16(22, 1, true);\n  view.setUint32(24, SAMPLE_RATE, true);\n  view.setUint32(28, SAMPLE_RATE * 2, true);\n  view.setUint16(32, 2, true);\n  view.setUint16(34, 16, true);\n  writeText(view, 36, 'data');\n  view.setUint32(40, sampleCount * 2, true);\n\n  MELODY.forEach((semitones, noteIndex) => {\n    if (semitones === null) return;\n\n    const frequency = frequencyOf(semitones);\n    for (let index = 0; index \u003c samplesPerNote; index++) {\n      const sample = sampleNote(frequency, index / SAMPLE_RATE);\n      view.setInt16(44 + (noteIndex * samplesPerNote + index) * 2, Math.round(sample * 32767), true);\n    }\n  });\n\n  return new Uint8Array(view.buffer);\n};\n\n/** Duração da melodia, em segundos. */\nexport const TUNE_SECONDS = MELODY.length * NOTE_SECONDS;\n\n/** Um endereço `blob:` com a melodia, pronto para entregar ao Player. */\nexport const createTuneUrl = () => URL.createObjectURL(new Blob([renderTune()], { type: 'audio/wav' }));\n","test/core.test.js":"import assert from 'node:assert/strict';\nimport { test } from 'node:test';\nimport { formatTime, percentForKey, percentFromPointer, progressPercent, timeFromPercent, titleFromUrl } from '../index.js';\n\ntest('progressPercent: a conta de 2016, com proteção para duração desconhecida', () => {\n  assert.equal(progressPercent(30, 120), 25);\n  assert.equal(progressPercent(0, NaN), 0);\n  assert.equal(progressPercent(5, 0), 0);\n  assert.equal(progressPercent(5, Infinity), 0);\n  assert.equal(progressPercent(130, 120), 100);\n});\n\ntest('percentFromPointer: usa só a posição do clique e a caixa do elemento', () => {\n  const rect = { left: 100, width: 400 };\n  assert.equal(percentFromPointer(300, rect), 50);\n  assert.equal(percentFromPointer(100, rect), 0);\n  assert.equal(percentFromPointer(50, rect), 0);\n  assert.equal(percentFromPointer(900, rect), 100);\n  assert.equal(percentFromPointer(300, { left: 0, width: 0 }), 0);\n});\n\ntest('timeFromPercent: null enquanto a duração não é conhecida', () => {\n  assert.equal(timeFromPercent(50, 24), 12);\n  assert.equal(timeFromPercent(150, 24), 24);\n  assert.equal(timeFromPercent(50, NaN), null);\n});\n\ntest('percentForKey: setas andam 5 segundos, Home e End vão às pontas', () => {\n  assert.equal(percentForKey('ArrowRight', 10, 100), 15);\n  assert.equal(percentForKey('ArrowLeft', 10, 100), 5);\n  assert.equal(percentForKey('ArrowLeft', 2, 100), 0);\n  assert.equal(percentForKey('ArrowRight', 98, 100), 100);\n  assert.equal(percentForKey('Home', 50, 100), 0);\n  assert.equal(percentForKey('End', 50, 100), 100);\n  assert.equal(percentForKey('Enter', 50, 100), null);\n  assert.equal(percentForKey('ArrowRight', 0, NaN), null);\n});\n\ntest('formatTime', () => {\n  assert.equal(formatTime(0), '0:00');\n  assert.equal(formatTime(75.9), '1:15');\n  assert.equal(formatTime(600), '10:00');\n  assert.equal(formatTime(NaN), '--:--');\n});\n\ntest('titleFromUrl: o nome da música sai do endereço', () => {\n  assert.equal(titleFromUrl('http://html5.justhearit.com/songs/fe/263796/Fetty_Wap_-_My_Way.mp3'), 'Fetty Wap - My Way');\n  assert.equal(titleFromUrl('musicas/Garota%20de%20Ipanema.ogg?v=2#t=10'), 'Garota de Ipanema');\n  assert.equal(titleFromUrl('faixa%E0%A4%A.mp3'), 'faixa%E0%A4%A');\n  assert.equal(titleFromUrl('blob:http://localhost/1b2c'), '');\n});\n","test/player.test.js":"import assert from 'node:assert/strict';\nimport { beforeEach, test } from 'node:test';\nimport { Window } from 'happy-dom';\nimport { Player } from '../index.js';\n\n// O fluxo principal com um DOM de verdade (happy-dom) e um áudio de mentira,\n// que guarda o que foi pedido e emite os eventos que um \u003caudio> emitiria.\nclass FakeAudio extends EventTarget {\n  paused = true;\n  currentTime = 0;\n  duration = NaN;\n  preload = '';\n  playCalls = 0;\n  loaded = 0;\n  playError = null;\n\n  constructor(source) {\n    super();\n    this.src = source;\n  }\n\n  emit(type) {\n    this.dispatchEvent(new Event(type));\n  }\n\n  load() {\n    this.loaded++;\n  }\n\n  removeAttribute() {\n    this.src = '';\n  }\n\n  ready(duration) {\n    this.duration = duration;\n    this.emit('loadedmetadata');\n  }\n\n  async play() {\n    this.playCalls++;\n    if (this.playError) throw this.playError;\n    this.paused = false;\n    this.emit('playing');\n  }\n\n  pause() {\n    if (this.paused) return;\n    this.paused = true;\n    this.emit('pause');\n  }\n\n  tick(currentTime) {\n    this.currentTime = currentTime;\n    this.emit('timeupdate');\n  }\n}\n\nlet window;\nlet document;\nlet father;\n\nconst mount = (music = 'songs/Fetty_Wap_-_My_Way.mp3', options = {}) => {\n  let audio;\n  const player = new Player(father, music, { createAudio: (source) => (audio = new FakeAudio(source)), ...options });\n  const root = father.lastElementChild;\n  return {\n    player,\n    root,\n    get audio() { return audio; },\n    button: root.querySelector('.player__button'),\n    track: root.querySelector('.player__track'),\n    bar: root.querySelector('.player__bar'),\n    title: root.querySelector('.player__title'),\n    time: root.querySelector('.player__time'),\n  };\n};\n\nconst click = (element, init = {}) => element.dispatchEvent(new window.MouseEvent('click', { bubbles: true, ...init }));\nconst settle = () => new Promise((resolve) => setImmediate(resolve));\n\nbeforeEach(() => {\n  window = new Window();\n  document = window.document;\n  father = document.createElement('div');\n  document.body.append(father);\n});\n\ntest('monta o componente dentro do elemento pai, com o nome tirado do endereço', () => {\n  const { root, title, time, button, track, audio } = mount();\n\n  assert.equal(root.className, 'player');\n  assert.equal(title.textContent, 'Fetty Wap - My Way');\n  assert.equal(time.textContent, '0:00 / --:--');\n  assert.equal(button.getAttribute('aria-label'), 'Tocar: Fetty Wap - My Way');\n  assert.equal(track.getAttribute('role'), 'slider');\n  assert.equal(audio.src, 'songs/Fetty_Wap_-_My_Way.mp3');\n  assert.equal(audio.preload, 'metadata');\n});\n\ntest('vários players na mesma página dividem uma única folha de estilo', () => {\n  mount();\n  mount();\n  mount();\n  assert.equal(father.children.length, 3);\n  assert.equal(document.querySelectorAll('style#player-styles').length, 1);\n});\n\ntest('clique no botão toca e pausa', async () => {\n  const { button, root, audio } = mount();\n\n  click(button);\n  await settle();\n  assert.equal(audio.paused, false);\n  assert.equal(root.dataset.status, 'playing');\n  assert.equal(button.getAttribute('aria-label'), 'Pausar: Fetty Wap - My Way');\n\n  click(button);\n  assert.equal(audio.paused, true);\n  assert.equal(root.dataset.status, 'paused');\n});\n\ntest('o progresso acompanha o tempo da música', () => {\n  const { audio, bar, time, track } = mount();\n  audio.ready(24);\n  audio.tick(6);\n\n  assert.equal(bar.style.width, '25%');\n  assert.equal(time.textContent, '0:06 / 0:24');\n  assert.equal(track.getAttribute('aria-valuenow'), '25');\n  assert.equal(track.getAttribute('aria-valuetext'), '0:06 / 0:24');\n});\n\ntest('clique na faixa leva a música até aquele ponto', () => {\n  const { audio, track, bar } = mount();\n  track.getBoundingClientRect = () => ({ left: 100, width: 400 });\n  audio.ready(24);\n\n  click(track, { clientX: 300 });\n  assert.equal(audio.currentTime, 12);\n  assert.equal(bar.style.width, '50%');\n});\n\ntest('regressão de 2016: clicar na faixa antes de o áudio carregar não lança erro', () => {\n  const { audio, track } = mount();\n  track.getBoundingClientRect = () => ({ left: 0, width: 200 });\n\n  assert.doesNotThrow(() => click(track, { clientX: 150 }));\n  assert.equal(audio.currentTime, 0);\n\n  audio.ready(40);\n  assert.equal(audio.currentTime, 30, 'o pedido guardado é atendido quando a duração chega');\n});\n\ntest('duplo clique para e volta ao início', async () => {\n  const { audio, button, bar, root } = mount();\n  audio.ready(24);\n  click(button);\n  await settle();\n  audio.tick(10);\n\n  button.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true }));\n  assert.equal(audio.paused, true);\n  assert.equal(audio.currentTime, 0);\n  assert.equal(bar.style.width, '0%');\n  assert.equal(root.dataset.status, 'paused');\n});\n\ntest('teclado: setas, Home e End movem a música', () => {\n  const { audio, track } = mount();\n  audio.ready(100);\n  const press = (key) => track.dispatchEvent(new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));\n\n  press('ArrowRight');\n  assert.equal(audio.currentTime, 5);\n  press('End');\n  assert.equal(audio.currentTime, 100);\n  press('Home');\n  assert.equal(audio.currentTime, 0);\n});\n\ntest('ao terminar, a música volta para o início', () => {\n  const { audio, bar } = mount();\n  audio.ready(24);\n  audio.tick(24);\n  audio.emit('ended');\n\n  assert.equal(audio.currentTime, 0);\n  assert.equal(bar.style.width, '0%');\n});\n\ntest('regressão de 2016: música que não carrega aparece na tela', async () => {\n  const { audio, button, title, root } = mount();\n  audio.playError = Object.assign(new Error('no supported source'), { name: 'NotSupportedError' });\n\n  click(button);\n  await settle();\n  assert.equal(root.dataset.status, 'error');\n  assert.equal(title.textContent, 'Não foi possível tocar esta música');\n  assert.equal(button.disabled, true);\n});\n\ntest('play interrompido por um pause não é tratado como erro', async () => {\n  const { audio, player } = mount();\n  audio.playError = Object.assign(new Error('interrupted'), { name: 'AbortError' });\n\n  await player.play();\n  assert.equal(player.state.status, 'idle');\n});\n\ntest('preload \"none\": o áudio só é criado no primeiro uso', () => {\n  const mounted = mount('a.mp3', { preload: 'none' });\n  assert.equal(mounted.audio, undefined);\n\n  click(mounted.button);\n  assert.equal(mounted.audio.playCalls, 1);\n  assert.equal(mounted.audio.preload, 'none');\n});\n\ntest('opções: título, cores e textos', () => {\n  const { title, root, button } = mount('a.mp3', { title: 'Minha música', colors: { accent: '#0a7' }, labels: { play: 'Play' } });\n  assert.equal(title.textContent, 'Minha música');\n  assert.equal(root.style.getPropertyValue('--player-accent'), '#0a7');\n  assert.equal(button.getAttribute('aria-label'), 'Play: Minha música');\n});\n\ntest('emite statechange com o novo estado', () => {\n  const { audio, player } = mount();\n  const seen = [];\n  player.addEventListener('statechange', (event) => seen.push(event.detail));\n\n  audio.ready(24);\n  assert.deepEqual(seen, [{ status: 'idle', currentTime: 0, duration: 24 }]);\n  assert.equal(player.state, seen[0]);\n});\n\ntest('destroy remove o componente, solta o áudio e desliga os ouvintes', async () => {\n  const { audio, player, button } = mount();\n  player.destroy();\n\n  assert.equal(father.children.length, 0);\n  assert.equal(audio.src, '');\n  assert.equal(audio.loaded, 1);\n\n  click(button);\n  await settle();\n  assert.equal(audio.playCalls, 0);\n});\n\ntest('argumentos inválidos dizem o que faltou', () => {\n  assert.throws(() => new Player(null, 'a.mp3'), { name: 'TypeError', message: /elemento/ });\n  assert.throws(() => new Player(father, ''), { name: 'TypeError', message: /endereço/ });\n});\n","test/state.test.js":"import assert from 'node:assert/strict';\nimport { test } from 'node:test';\nimport { INITIAL_STATE, reduce } from '../index.js';\nimport { DEFAULT_LABELS, describe } from '../src/view.js';\n\nconst run = (...events) => events.reduce(reduce, INITIAL_STATE);\n\ntest('o estado inicial é parado, no zero, sem duração', () => {\n  assert.deepEqual(INITIAL_STATE, { status: 'idle', currentTime: 0, duration: NaN });\n});\n\ntest('uma sessão comum: carregar, tocar, avançar, pausar', () => {\n  const state = run(\n    { type: 'loadedmetadata', duration: 24 },\n    { type: 'playing' },\n    { type: 'timeupdate', currentTime: 6 },\n    { type: 'pause' },\n  );\n  assert.deepEqual(state, { status: 'paused', currentTime: 6, duration: 24 });\n});\n\ntest('ao terminar, volta para o início (como em 2016)', () => {\n  const state = run({ type: 'loadedmetadata', duration: 24 }, { type: 'playing' }, { type: 'timeupdate', currentTime: 24 }, { type: 'ended' });\n  assert.deepEqual(state, { status: 'paused', currentTime: 0, duration: 24 });\n});\n\ntest('erro é definitivo: eventos atrasados não o apagam', () => {\n  const state = run({ type: 'error' }, { type: 'pause' }, { type: 'playing' });\n  assert.equal(state.status, 'error');\n});\n\ntest('evento desconhecido devolve o mesmo estado, e nenhum estado é mutável', () => {\n  assert.equal(reduce(INITIAL_STATE, { type: 'volumechange' }), INITIAL_STATE);\n  const state = run({ type: 'playing' });\n  assert.throws(() => { state.status = 'idle'; }, TypeError);\n});\n\ntest('describe: o que a tela mostra em cada estado', () => {\n  const playing = describe({ status: 'playing', currentTime: 6, duration: 24 }, 'My Way', DEFAULT_LABELS);\n  assert.deepEqual(playing, {\n    status: 'playing',\n    percent: 25,\n    buttonLabel: 'Pausar: My Way',\n    buttonDisabled: false,\n    title: 'My Way',\n    time: '0:06 / 0:24',\n    sliderLabel: 'Posição da música: My Way',\n    sliderText: '0:06 / 0:24',\n    busy: false,\n  });\n\n  const idle = describe(INITIAL_STATE, '', DEFAULT_LABELS);\n  assert.equal(idle.buttonLabel, 'Tocar: Música sem nome');\n  assert.equal(idle.time, '0:00 / --:--');\n  assert.equal(idle.percent, 0);\n\n  const failed = describe({ ...INITIAL_STATE, status: 'error' }, 'My Way', DEFAULT_LABELS);\n  assert.equal(failed.title, 'Não foi possível tocar esta música');\n  assert.equal(failed.buttonDisabled, true);\n});\n","test/tune.test.js":"import assert from 'node:assert/strict';\nimport { test } from 'node:test';\nimport { TUNE_SECONDS, renderTune } from '../demo/tune.js';\n\ntest('a melodia de demonstração é um WAV válido, sem estourar o volume', () => {\n  const bytes = renderTune();\n  const view = new DataView(bytes.buffer);\n  const text = (offset) => String.fromCharCode(...bytes.subarray(offset, offset + 4));\n\n  assert.equal(text(0), 'RIFF');\n  assert.equal(text(8), 'WAVE');\n  assert.equal(text(36), 'data');\n  assert.equal(view.getUint32(24, true), 22050);\n  assert.equal(view.getUint32(40, true), bytes.length - 44);\n  assert.ok(Math.abs((bytes.length - 44) / 2 / 22050 - TUNE_SECONDS) \u003c 0.01);\n\n  let peak = 0;\n  for (let offset = 44; offset \u003c bytes.length; offset += 2) peak = Math.max(peak, Math.abs(view.getInt16(offset, true)));\n  assert.ok(peak > 8000 && peak \u003c 32767, `pico ${peak}`);\n});\n"}</script>
+<script src="vendor/jonacode/jonacode.report.iife.min.js"></script>
+<script>
+(async () => {
+  const sources = JSON.parse(document.getElementById('sources').textContent);
+  const J = window.Jonacode;
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  const theme = () => (darkQuery.matches ? J.oneDark : J.oneLight);
+  const editors = [];
+
+  // Monta um editor Jonacode. Sem o bundle, cai num <pre>.
+  const mount = (element, { value, language, firstLine = 1, marks = [], wrap = false, maxLines }) => {
+    if (!J) {
+      const pre = document.createElement('pre');
+      pre.textContent = value;
+      element.append(pre);
+      return { setValue: (text) => { pre.textContent = text; }, setOptions() {} };
+    }
+
+    const marked = new Set(marks);
+    const editor = J.createEditor(element, {
+      value,
+      language,
+      maxLines,
+      readOnly: true,
+      theme: theme(),
+      lineWrapping: wrap,
+      fontSize: 13,
+      tabSize: 2,
+      ariaLabel: 'Código (somente leitura)',
+      extensions: [
+        J.lineNumbers({ format: (line) => String(line + firstLine - 1) }),
+        J.lineClass((text, line) => (marked.has(line + firstLine) ? 'mark' : null)),
+      ],
+    });
+    editors.push(editor);
+    return editor;
+  };
+
+  darkQuery.addEventListener('change', () => editors.forEach((editor) => editor.setOptions({ theme: theme() })));
+
+  const range = (spec) => {
+    if (!spec) return null;
+    const [from, to = from] = spec.split('-').map(Number);
+    return { from, to };
+  };
+
+  // Tira a indentação comum do trecho, para o código do <script> de 2016 não começar no meio da tela.
+  const dedent = (lines) => {
+    const indents = lines.filter((line) => line.trim()).map((line) => line.match(/^\t*/)[0].length);
+    const common = Math.min(...indents);
+    return lines.map((line) => line.slice(common).replaceAll('\t', '  '));
+  };
+
+  // Trechos estáticos: <div class="code" data-file data-lines data-mark>
+  for (const element of document.querySelectorAll('.code[data-file]')) {
+    const file = element.dataset.file;
+    const lines = sources[file].replace(/\r/g, '').replace(/\n+$/, '').split('\n');
+    const slice = range(element.dataset.lines) ?? { from: 1, to: lines.length };
+    const markRange = range(element.dataset.mark);
+    const marks = markRange ? Array.from({ length: markRange.to - markRange.from + 1 }, (_, i) => markRange.from + i) : [];
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.innerHTML = `<span>${file}</span><span>${file.startsWith('original/') ? '2016' : '2026'}</span>`;
+    const host = document.createElement('div');
+    element.append(label, host);
+
+    mount(host, {
+      value: dedent(lines.slice(slice.from - 1, slice.to)).join('\n'),
+      language: J?.javascript,
+      firstLine: slice.from,
+      marks,
+      wrap: 'wrap' in element.dataset,
+    });
+  }
+
+  // Abas com os arquivos da versão nova.
+  const newFiles = ['src/player.js', 'src/core.js', 'src/state.js', 'src/view.js', 'src/styles.js', 'index.js', 'demo/tune.js', 'test/player.test.js'];
+  const tabs = document.getElementById('tabs');
+  const newCode = mount(document.getElementById('new-code'), { value: sources[newFiles[0]], language: J?.javascript, maxLines: 34 });
+  const selectTab = (file) => {
+    newCode.setValue(sources[file]);
+    for (const button of tabs.children) button.setAttribute('aria-selected', String(button.dataset.file === file));
+  };
+  for (const file of newFiles) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.role = 'tab';
+    button.dataset.file = file;
+    button.textContent = file.replace('src/', '');
+    button.addEventListener('click', () => selectTab(file));
+    tabs.append(button);
+  }
+  selectTab(newFiles[0]);
+
+  // A versão nova, carregada dos fontes reais como módulos.
+  const moduleUrl = (code) => URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+  const linked = {};
+  for (const name of ['core.js', 'state.js', 'styles.js', 'view.js', 'player.js']) {
+    const code = sources[`src/${name}`].replace(/from '\.\/([\w-]+\.js)'/g, (match, dependency) => `from '${linked[dependency]}'`);
+    linked[name] = moduleUrl(code);
+  }
+  const [{ Player }, { createTuneUrl }] = await Promise.all([import(linked['player.js']), import(moduleUrl(sources['demo/tune.js']))]);
+
+  // A versão de 2016: o conteúdo do <script> do index.html original, até antes das quatro instâncias.
+  const legacyCode = sources['original/index.html'].split('<script type="text/javascript">')[1].split('var player1')[0];
+  const LegacyPlayer = new Function(`${legacyCode}\nreturn Player;`)();
+
+  const stageOld = document.getElementById('stage-old');
+  const stageNew = document.getElementById('stage-new');
+  const logOld = document.getElementById('log-old');
+  const hint = document.getElementById('hint');
+  const presetButtons = document.getElementById('presets');
+  const stateView = mount(document.getElementById('state-new'), { value: '', language: J?.json });
+
+  const log = (text, kind = '') => {
+    const item = document.createElement('li');
+    item.textContent = text;
+    item.className = kind;
+    logOld.append(item);
+    while (logOld.children.length > 6) logOld.firstChild.remove();
+  };
+
+  // Tudo o que estoura sem tratamento nesta página vem do código de 2016: o novo trata os próprios erros.
+  addEventListener('error', (event) => log(event.message.replace(/^Uncaught /, ''), 'bad'));
+  addEventListener('unhandledrejection', (event) => log(`${event.reason?.name}: ${event.reason?.message}`, 'bad'));
+
+  const tune = createTuneUrl();
+  const scenes = [
+    {
+      name: 'a melodia',
+      music: tune,
+      title: 'Melodia de demonstração',
+      hint: 'Toque os dois. Clique na faixa cinza para avançar e dê um duplo clique no botão roxo para parar. O comportamento é o mesmo; a diferença está no que cada um mostra e no que cada um deixa escapar.',
+    },
+    {
+      name: 'um endereço que não existe',
+      music: 'musicas/Fetty_Wap_-_My_Way.mp3',
+      hint: 'O arquivo não existe. No de 2016, clique no botão e depois na faixa: a tela não muda e os erros aparecem logo abaixo. O de 2026 avisa no próprio player e tira o nome da música do endereço.',
+    },
+  ];
+
+  let current = { legacy: null, modern: null };
+
+  const showState = (player) => stateView.setValue(JSON.stringify(player.state, null, 2));
+
+  const play = (scene) => {
+    current.legacy?.audio?.pause();
+    current.modern?.destroy();
+    stageOld.replaceChildren();
+    logOld.replaceChildren();
+    delete window.x;
+
+    const legacy = new LegacyPlayer(stageOld, scene.music);
+    log(`window.x === ${JSON.stringify(window.x)}`, 'bad');
+    log(`elementos focáveis: ${stageOld.querySelectorAll('button, [tabindex]').length}`);
+
+    const modern = new Player(stageNew, scene.music, scene.title ? { title: scene.title } : {});
+    modern.addEventListener('statechange', () => showState(modern));
+    showState(modern);
+
+    current = { legacy, modern };
+    hint.textContent = scene.hint;
+  };
+
+  for (const scene of scenes) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = scene.name;
+    button.setAttribute('aria-pressed', 'false');
+    button.addEventListener('click', () => {
+      play(scene);
+      for (const other of presetButtons.children) other.setAttribute('aria-pressed', String(other === button));
+    });
+    presetButtons.append(button);
+  }
+  presetButtons.children[0].click();
+})();
+</script>
+</body>
+</html>
